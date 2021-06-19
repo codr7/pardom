@@ -3,7 +3,7 @@
   :version "1"
   :maintainer "codr7"
   :author "codr7"
-  :description "A DOM approximation."
+  :description "A virtual DOM."
   :licence "MIT"
   :serial t
   :components ((:file "util")

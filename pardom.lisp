@@ -36,13 +36,14 @@
 (defun append-body (target node)
   (push node (body target)))
 
-(defmethod to-html ((val symbol))
+(defmethod to-html ((val symbol) &key)
   (string-downcase (symbol-name val)))
 
-(defmethod write-html ((val string) out)
+(defmethod write-html ((val string) out &key pretty?)
+  (declare (ignore pretty?))
   (write-string val out))
 
-(defmethod write-html ((nod node) out)
+(defmethod write-html ((nod node) out &key pretty?)
   (write-char #\< out)
   (write-string (to-html (tag nod)) out)
   
@@ -58,9 +59,15 @@
     (if bns
 	(progn
 	  (write-char #\> out)
+
+	  (when pretty?
+	    (terpri out))
 	  
 	  (dolist (bn bns)
-	    (write-html bn out))
+	    (write-html bn out :pretty? pretty?)
+
+	    (when pretty?
+	      (terpri out)))
 
 	  (write-char #\< out)
 	  (write-char #\/ out)
@@ -70,9 +77,9 @@
 	  (write-char #\/ out)
 	  (write-char #\> out)))))
 
-(defmethod to-html ((nod node))
+(defmethod to-html ((nod node) &key pretty?)
   (with-output-to-string (out)
-    (write-html nod out)))
+    (write-html nod out :pretty? pretty?)))
 
 (defstruct (document (:include node))
   (head (new-node :head) :type node)
@@ -97,6 +104,14 @@
 (defmethod (setf body) (val (doc document))
   (setf (body (document-body doc)) val))
 
+(defmethod write-html ((doc document) out &key pretty?)
+  (write-string "<!DOCTYPE html>" out)
+  
+  (when pretty?
+    (terpri out))
+
+  (call-next-method))
+
 (defun node-tests ()
   (let ((n (new-node :foo '((:bar . "baz")) "qux")))
     (assert (string= (with-output-to-string (out)
@@ -106,8 +121,16 @@
 (defun document-tests ()
   (let ((d (new-document :title "foo")))
     (assert (string= (with-output-to-string (out)
-		       (write-html d out))
-		     "<html><head><title>foo</title></head><body/></html>"))))
+		       (write-html d out :pretty? t))
+		     "<!DOCTYPE html>
+<html>
+<head>
+<title>
+foo
+</title>
+</head>
+<body/>
+</html>"))))
 
 (defun tests ()
   (node-tests)
