@@ -1,9 +1,11 @@
 (defpackage pardom
   (:use cl)
   (:import-from util)
-  (:export body
-	   new-node node
-	   tag
+  (:export append-body
+	   body
+	   document
+	   new-document new-node node
+	   tag to-html
 	   write-html))
 
 (in-package pardom)
@@ -34,7 +36,7 @@
 (defun append-body (target node)
   (push node (body target)))
 
-(defun to-s (val)
+(defmethod to-html ((val symbol))
   (string-downcase (symbol-name val)))
 
 (defmethod write-html ((val string) out)
@@ -42,11 +44,11 @@
 
 (defmethod write-html ((nod node) out)
   (write-char #\< out)
-  (write-string (to-s (tag nod)) out)
+  (write-string (to-html (tag nod)) out)
   
   (dolist (a (node-attributes nod))
     (write-char #\space out)
-    (write-string (to-s (first a)) out)
+    (write-string (to-html (first a)) out)
     (write-char #\= out)
     (write-char #\" out)
     (princ (rest a) out)
@@ -62,11 +64,15 @@
 
 	  (write-char #\< out)
 	  (write-char #\/ out)
-	  (write-string (to-s (tag nod)) out)
+	  (write-string (to-html (tag nod)) out)
 	  (write-char #\> out))
 	(progn
 	  (write-char #\/ out)
 	  (write-char #\> out)))))
+
+(defmethod to-html ((nod node))
+  (with-output-to-string (out)
+    (write-html nod out)))
 
 (defstruct (document (:include node))
   (head (new-node :head) :type node)
